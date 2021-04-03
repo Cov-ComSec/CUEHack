@@ -94,9 +94,22 @@ Regards,
  - Not sure that SQLi works though
 
 
+## HTTP Logins
+
+ - admin / administrator  FAIL
+ - intern WORKS
+
+
 ## Back to FTP 
 
 https://github.com/danielmiessler/SecLists/blob/master/Passwords/Default-Credentials/ftp-betterdefaultpasslist.txt
 
 ['ftp', 'b1uRR3']
 Login Successful
+
+Using those creds didnt seem to give my anything new for FTP,
+
+## Brute Force Web
+
+Not in the top 10k.. That sucks.
+
