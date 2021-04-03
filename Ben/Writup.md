@@ -50,6 +50,13 @@ Create some creds
  
 Tells me to go to the notes page...
 
+## So with the login
+
+ - Unknown user we get "user does not exist"
+ - Known user we get "invalid password"
+ - Not sure that SQLi works though
+
+
 ## FTP
 
 Anoynmous login is ok
@@ -67,9 +74,8 @@ Using binary mode to transfer files.
 ftp> ls
 200 PORT command successful. Consider using PASV.
 150 Here comes the directory listing.
--rw-r--r--    1 0        0             474 Apr 03 20:50 announcement.txt
+-rw-r--r--    1 0        0           56457 Apr 03 20:50 wordlist.txt
 226 Directory send OK.
-ftp> 
 ```
 
 Leaks a bit of info,  about strong paswords / common passowrds etc
@@ -87,13 +93,6 @@ Regards,
 ~ Manager
 ```
 
-## So with the login
-
- - Unknown user we get "user does not exist"
- - Known user we get "invalid password"
- - Not sure that SQLi works though
-
-
 ## HTTP Logins
 
  - admin / administrator  FAIL
@@ -107,9 +106,68 @@ https://github.com/danielmiessler/SecLists/blob/master/Passwords/Default-Credent
 ['ftp', 'b1uRR3']
 Login Successful
 
-Using those creds didnt seem to give my anything new for FTP,
+Using those creds didnt seem to give my anything new for FTP, bugger, anything hidden
+(Perhaps I should have checked this before... Turns out it also appears with the anon user.
+
+```
+ftp> ls
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+-rw-r--r--    1 0        0             474 Apr 03 20:50 announcement.txt
+226 Directory send OK.
+ftp> 
+```
+
+
 
 ## Brute Force Web
 
 Not in the top 10k.. That sucks.
 
+But we can try that wordlist we found (and fix my code)
+
+```
+Attempt my_wifes_birthday
+Success
+```
+
+## Admin Panel 
+
+So now we get an admin panel that lets us run commands.
+Looks like system as standard.
+
+No netcat and wget etc wont be too much use
+
+ls /home/intern
+
+```
+Result:__pycache__ create_db.py main.py runapp.sh static templates 
+```
+
+ls /home/manager
+
+```
+Result:total 12 -rw-r--r-- 1 root root 3151 Apr 3 20:50 research.txt -rw-r--r-- 1 root root 159 Apr 3 20:50 source.c -r-------- 1 root root 36 Apr 3 20:50 user.txt 
+```
+
+## The Run app
+
+Cuz we don't just run scripts 
+
+cat /home/intern/runscript.sh
+
+```
+Result:#!/bin/bash gcc /home/manager/source.c -o /home/manager/runme chown manager /home/manager/runme sudo -u manager chmod +s /home/manager/runme sudo -u intern python3 /home/intern/create_db.py sudo -u intern python3 /home/intern/main.py
+```
+
+```
+#!/bin/bash 
+gcc /home/manager/source.c -o /home/manager/runme 
+chown manager /home/manager/runme 
+sudo -u manager chmod +s /home/manager/runme 
+sudo -u intern python3 /home/intern/create_db.py 
+sudo -u intern python3 /home/intern/main.py
+```
+
+
+Appears that the runme script isnt in manager...
