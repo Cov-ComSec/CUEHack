@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  # Uncomment the following block if you want an http-only server
+#  http:
+#    image: caddy:alpine
+#    restart: always
+#    ports:
+#      - 80:80
+#    volumes:
+#      - ./http/config/Caddyfile:/etc/caddy/Caddyfile
+#      - ./http/srv:/srv
+
+  # Comment out the following block if you don't want a PHP server
+  php:
+    build: php
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      - ./php/php7:/etc/php7
+      - ./php/www/conf:/var/www/conf:ro
+      - ./php/www/html:/var/www/html
+      - ./php/services.d:/etc/services.d:ro
+
+  # Comment out the following block if you don't want a SSH server
+  ssh:
+    build: ssh
+    restart: always
+    ports:
+      - 22:22
+    volumes:
+      - ./ssh/conf/sshd_config:/etc/ssh/sshd_config:ro
+      - ./ssh/services.d:/etc/services.d:ro
+
+  # Comment out the following block if you don't want a SMB server
+  smb:
+    build: smb
+    restart: always
+    ports:
+      - 139:139
+      - 445:445
+    volumes:
+      - ./smb/conf/smb.conf:/etc/samba/smb.conf:ro
+      - ./smb/services.d:/etc/services.d:ro

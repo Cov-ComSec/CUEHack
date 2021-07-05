@@ -1,0 +1,2 @@
+#!/usr/bin/execlineb -P
+smbd -iFSd 3

@@ -1,0 +1,3 @@
+#!/usr/bin/execlineb -P
+s6-setuidgid www-data
+caddy run --config /var/www/conf/Caddyfile

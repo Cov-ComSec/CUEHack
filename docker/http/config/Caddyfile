@@ -1,0 +1,13 @@
+{
+    # No https as we are running locally
+    # Can be enabled, but can be iffy to configure correctly
+    auto_https off
+}
+
+# Bind to port 80
+:80 {
+    # Set /srv as the file root
+    root * /srv
+    # Set Caddy's mode to file server to serve the files
+    file_server
+}

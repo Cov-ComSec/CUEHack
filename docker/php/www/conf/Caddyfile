@@ -1,0 +1,22 @@
+{
+    # No https as we are running locally
+    # Can be enabled, but can be iffy to configure correctly
+    auto_https off
+    storage file_system {
+        root /var/www/data
+    }
+}
+
+# Bind to port 80
+:80 {
+    # Set /srv as the file root
+    root * /var/www/html
+    # Set Caddy's mode to file server to serve the files
+    file_server {
+        # The hide directive allows both placeholders and glob patterns
+        # It allows us to tell the server to not serve specific files
+        # This directive uses relative filepath from /srv, not from the request
+        # hide secret.txt
+    }
+    php_fastcgi unix//run/php/php-fpm.sock
+}

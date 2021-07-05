@@ -1,0 +1,2 @@
+#!/usr/bin/execlineb -P
+/usr/sbin/sshd -p 22 -h /etc/ssh/ssh_host_dsa_key
