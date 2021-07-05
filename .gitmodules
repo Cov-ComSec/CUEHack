@@ -1,3 +1,6 @@
 [submodule "entries/Richie_group"]
 	path = entries/Richie_group
 	url = https://github.com/RichieSec/Build-a-CTF_Event
+[submodule "entries/Ben_group"]
+	path = entries/Ben_group
+	url = https://github.com/sharkmoos/Build-a-CTF_Event
